@@ -55,22 +55,23 @@ export async function POST(request: NextRequest) {
         },
       };
     } else {
-      const blogDraft = await generateBlogPostDraft(trendAnalysis);
+      const blogDraft = await generateBlogPostDraft(trendAnalysis, generationOptions);
       draft = {
         id: `draft-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         type: "blog",
         title: blogDraft.title,
-        content: blogDraft.content,
+        content: blogDraft.content, // Already in markdown format
         status: "pending",
         generatedAt: new Date().toISOString(),
         metadata: {
-          trends: trendAnalysis.relevantStories.map((s) => s.title),
+          trends: trendAnalysis.relevantStories?.map((s) => s.title) || [],
           relevanceScore:
-            trendAnalysis.relevantStories.reduce(
+            trendAnalysis.relevantStories?.reduce(
               (sum, s) => sum + s.relevanceScore,
               0
-            ) / trendAnalysis.relevantStories.length,
+            ) / (trendAnalysis.relevantStories?.length || 1) || 0,
           excerpt: blogDraft.excerpt,
+          generationOptions: generationOptions,
         },
       };
     }

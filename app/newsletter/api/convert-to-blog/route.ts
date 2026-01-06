@@ -26,21 +26,46 @@ function convertNewsletterToMarkdown(blocks: NewsletterBlock[]): string {
         break;
 
       case "text":
-        // Remove HTML tags and convert to markdown
-        const textContent = block.content
-          .replace(/<p>/g, "")
+        // Convert HTML to markdown, preserving structure
+        let textContent = block.content
+          // Convert lists
+          .replace(/<ul[^>]*>/g, "")
+          .replace(/<\/ul>/g, "\n")
+          .replace(/<li[^>]*>/g, "- ")
+          .replace(/<\/li>/g, "\n")
+          // Convert paragraphs
+          .replace(/<p[^>]*>/g, "")
           .replace(/<\/p>/g, "\n\n")
-          .replace(/<strong>/g, "**")
+          // Convert divs
+          .replace(/<div[^>]*>/g, "")
+          .replace(/<\/div>/g, "\n\n")
+          // Convert strong/bold
+          .replace(/<strong[^>]*>/g, "**")
           .replace(/<\/strong>/g, "**")
-          .replace(/<em>/g, "*")
+          // Convert emphasis/italic
+          .replace(/<em[^>]*>/g, "*")
           .replace(/<\/em>/g, "*")
-          .replace(/<a href="([^"]+)"[^>]*>([^<]+)<\/a>/g, "[$2]($1)")
+          // Convert links
+          .replace(/<a[^>]*href="([^"]+)"[^>]*>([^<]+)<\/a>/g, "[$2]($1)")
+          // Convert line breaks
+          .replace(/<br\s*\/?>/g, "\n")
+          // Remove inline styles (they're in the HTML but not needed in markdown)
+          .replace(/style="[^"]*"/g, "")
+          // Clean up extra whitespace
+          .replace(/\n{3,}/g, "\n\n")
           .trim();
+        
+        // Clean up color spans and other inline formatting
+        textContent = textContent
+          .replace(/<span[^>]*>/g, "")
+          .replace(/<\/span>/g, "")
+          .replace(/\n{3,}/g, "\n\n");
+        
         markdown += `${textContent}\n\n`;
         break;
 
       case "image":
-        if (block.src) {
+        if (block.src && block.src !== "" && !block.src.includes("placeholder")) {
           markdown += `![${block.alt || ""}](${block.src})\n\n`;
         }
         break;

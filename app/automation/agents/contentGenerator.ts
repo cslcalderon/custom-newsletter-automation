@@ -32,11 +32,21 @@ export async function generateNewsletterDraft(
 ): Promise<NewsletterDraft> {
   // If we have structured data (new newsletter strategy), use it
   if (trendAnalysis.rawData) {
-    const result = generateNewsletterFromStructuredData(
-      trendAnalysis.rawData,
-      options || { includeBiweeklyInsights: false }
-    );
-    return result;
+    try {
+      const result = generateNewsletterFromStructuredData(
+        trendAnalysis.rawData,
+        options || { includeBiweeklyInsights: false }
+      );
+      return {
+        subject: result.subject,
+        blocks: result.blocks,
+        aiReasoning: result.aiReasoning,
+        dataSources: result.dataSources,
+      };
+    } catch (error) {
+      console.error("Error generating newsletter from structured data:", error);
+      throw error;
+    }
   }
 
   // Legacy path for blog-style newsletters
@@ -196,16 +206,27 @@ export async function generateNewsletterDraft(
 }
 
 export async function generateBlogPostDraft(
-  trendAnalysis: TrendAnalysisResult
+  trendAnalysis: TrendAnalysisResult,
+  options?: NewsletterGenerationOptions
 ): Promise<BlogPostDraft> {
+  // If we have structured data (new newsletter strategy), use it to generate blog post
+  if (trendAnalysis.rawData) {
+    const { generateBlogPostFromStructuredData } = await import("./blogPostGenerator");
+    return generateBlogPostFromStructuredData(
+      trendAnalysis.rawData,
+      options || { includeBiweeklyInsights: false }
+    );
+  }
+
+  // Legacy path for blog-style content
   const blogPost = USE_MOCK_MODE
     ? await generateBlogPostMock(
-        trendAnalysis.relevantStories,
-        trendAnalysis.overallTrend
+        trendAnalysis.relevantStories || [],
+        trendAnalysis.overallTrend || ""
       )
     : await generateBlogPost(
-        trendAnalysis.relevantStories,
-        trendAnalysis.overallTrend
+        trendAnalysis.relevantStories || [],
+        trendAnalysis.overallTrend || ""
       );
 
   return {

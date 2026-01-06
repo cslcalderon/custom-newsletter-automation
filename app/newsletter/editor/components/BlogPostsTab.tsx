@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import type { Draft } from "@/app/automation/types/draft";
 import { Button } from "@/components/ui/button";
-import { Loader2, Eye, Trash2, CheckCircle2, XCircle } from "lucide-react";
+import { Loader2, Eye, Trash2, CheckCircle2, XCircle, Copy } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -94,6 +94,16 @@ export function BlogPostsTab() {
     }
   };
 
+  const handleCopyMarkdown = async (blog: Draft) => {
+    try {
+      await navigator.clipboard.writeText(blog.content);
+      alert("Markdown content copied to clipboard!");
+    } catch (error) {
+      console.error("Error copying to clipboard:", error);
+      alert("Failed to copy to clipboard");
+    }
+  };
+
   const getStatusColor = (status: Draft["status"]) => {
     switch (status) {
       case "pending":
@@ -111,18 +121,40 @@ export function BlogPostsTab() {
 
   // Convert markdown to HTML for preview
   const renderMarkdownPreview = (markdown: string): string => {
-    // Simple markdown to HTML conversion
+    // Simple markdown to HTML conversion with consistent styling
     let html = markdown
-      .replace(/^# (.*$)/gim, "<h1>$1</h1>")
-      .replace(/^## (.*$)/gim, "<h2>$1</h2>")
-      .replace(/^### (.*$)/gim, "<h3>$1</h3>")
-      .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-      .replace(/\*(.*?)\*/g, "<em>$1</em>")
-      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
-      .replace(/\n\n/g, "</p><p>")
-      .replace(/\n/g, "<br>");
+      // Headers
+      .replace(/^# (.*$)/gim, "<h1 style='font-size: 2em; font-weight: bold; margin: 20px 0 10px 0; color: #1f2937;'>$1</h1>")
+      .replace(/^## (.*$)/gim, "<h2 style='font-size: 1.5em; font-weight: bold; margin: 18px 0 8px 0; color: #1f2937;'>$1</h2>")
+      .replace(/^### (.*$)/gim, "<h3 style='font-size: 1.25em; font-weight: bold; margin: 16px 0 6px 0; color: #374151;'>$1</h3>")
+      // Bold
+      .replace(/\*\*(.*?)\*\*/g, "<strong style='font-weight: 600;'>$1</strong>")
+      // Italic
+      .replace(/\*(.*?)\*/g, "<em style='font-style: italic;'>$1</em>")
+      // Links
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" style="color: #3b82f6; text-decoration: underline;">$1</a>')
+      // Lists - handle unordered lists
+      .replace(/^- (.*$)/gim, "<li style='margin: 6px 0; padding-left: 5px;'>$1</li>")
+      // Wrap consecutive list items in ul tags (simplified)
+      .replace(/(<li[^>]*>.*<\/li>\n?)+/g, (match) => `<ul style='margin: 10px 0; padding-left: 25px; list-style-type: disc;'>${match}</ul>`)
+      // Horizontal rules
+      .replace(/^---$/gim, "<hr style='border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;'>")
+      // Paragraphs
+      .split('\n\n')
+      .map(para => {
+        para = para.trim();
+        if (!para || para.startsWith('<h') || para.startsWith('<ul') || para.startsWith('<hr')) {
+          return para;
+        }
+        return `<p style='margin: 12px 0; line-height: 1.7; color: #374151; font-size: 16px;'>${para}</p>`;
+      })
+      .join('\n')
+      // Clean up empty paragraphs
+      .replace(/<p[^>]*>\s*<\/p>/g, '');
     
-    return `<div style="padding: 20px; max-width: 800px; margin: 0 auto; font-family: Arial, sans-serif; line-height: 1.6;"><p>${html}</p></div>`;
+    return `<div style="padding: 30px; max-width: 800px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; font-size: 16px; line-height: 1.7; color: #374151; background-color: #ffffff;">
+      ${html}
+    </div>`;
   };
 
   const previewContent = selectedBlog
@@ -215,6 +247,16 @@ export function BlogPostsTab() {
                 </div>
 
                 <div className="flex items-center gap-2 flex-wrap">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleCopyMarkdown(blog)}
+                    title="Copy markdown to clipboard"
+                  >
+                    <Copy className="w-4 h-4 mr-2" />
+                    Copy Markdown
+                  </Button>
+
                   <Dialog
                     open={previewOpen && selectedBlog?.id === blog.id}
                     onOpenChange={(open) => {
@@ -231,6 +273,17 @@ export function BlogPostsTab() {
                     </DialogTrigger>
                     <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
                       <DialogTitle>Preview: {blog.title}</DialogTitle>
+                      <div className="mb-4">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleCopyMarkdown(blog)}
+                          className="mb-2"
+                        >
+                          <Copy className="w-4 h-4 mr-2" />
+                          Copy Markdown
+                        </Button>
+                      </div>
                       <iframe
                         srcDoc={previewContent}
                         className="w-full h-[600px] border border-gray-300 rounded"

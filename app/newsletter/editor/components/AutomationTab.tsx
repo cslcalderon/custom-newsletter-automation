@@ -108,18 +108,38 @@ export function AutomationTab({ onSwitchToEditor }: AutomationTabProps = {}) {
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to generate draft");
+        let errorMessage = "Failed to generate draft";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorData.message || errorMessage;
+        } catch (e) {
+          // If response is not JSON (might be HTML error page)
+          const text = await response.text();
+          console.error("Non-JSON error response:", text.substring(0, 200));
+          errorMessage = `Server error (${response.status}): ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
       }
 
-      const newDraft = await response.json();
+      let newDraft;
+      try {
+        newDraft = await response.json();
+      } catch (jsonError) {
+        const text = await response.text();
+        console.error("Failed to parse JSON response:", text.substring(0, 500));
+        throw new Error("Server returned invalid response. Check console for details.");
+      }
+      
       setDrafts([newDraft, ...drafts]);
-      alert(`${type === "newsletter" ? "Newsletter" : "Blog post"} draft generated successfully!`);
+      alert("Newsletter draft generated successfully!");
+      setIncludeBiweekly(false);
+      setBiweeklyTopic("");
     } catch (error: any) {
       console.error("Error generating draft:", error);
       alert(error.message || "Failed to generate draft. Make sure GEMINI_API_KEY is set.");
     } finally {
       setIsGenerating(false);
+      setGeneratingType(null);
     }
   };
 
