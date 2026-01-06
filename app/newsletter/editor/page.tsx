@@ -7,14 +7,18 @@ import { EditorCanvas, createBlockFromType } from "./components/EditorCanvas";
 import { BlockEditor } from "./components/BlockEditor";
 import { EmailPreview } from "./components/EmailPreview";
 import { TemplatesTab } from "./components/TemplatesTab";
+import { AutomationTab } from "./components/AutomationTab";
+import { BlogPostsTab } from "./components/BlogPostsTab";
 import { useNewsletterStore } from "./store/newsletterStore";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Eye, EyeOff, FileText, Layout } from "lucide-react";
+import { Eye, EyeOff, FileText, Layout, Sparkles } from "lucide-react";
 import type { BlockType } from "./types/newsletter";
+import { useState } from "react";
 
 export default function NewsletterEditorPage() {
   const { blocks, addBlock, moveBlock, isPreviewMode, setIsPreviewMode } = useNewsletterStore();
+  const [activeTab, setActiveTab] = useState("editor");
   
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -90,16 +94,24 @@ export default function NewsletterEditorPage() {
         </header>
 
         {/* Tabs */}
-        <Tabs defaultValue="editor" className="flex-1 flex flex-col overflow-hidden">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
           <div className="border-b border-gray-200 bg-white px-4">
             <TabsList>
-              <TabsTrigger value="editor">
+              <TabsTrigger value="editor" id="editor-tab">
                 <Layout className="w-4 h-4 mr-2" />
                 Editor
               </TabsTrigger>
               <TabsTrigger value="templates">
                 <FileText className="w-4 h-4 mr-2" />
                 Templates
+              </TabsTrigger>
+              <TabsTrigger value="automation">
+                <Sparkles className="w-4 h-4 mr-2" />
+                Automation
+              </TabsTrigger>
+              <TabsTrigger value="blog-posts">
+                <FileText className="w-4 h-4 mr-2" />
+                Blog Posts
               </TabsTrigger>
             </TabsList>
           </div>
@@ -124,6 +136,16 @@ export default function NewsletterEditorPage() {
           {/* Templates Tab */}
           <TabsContent value="templates" className="flex-1 overflow-hidden m-0">
             <TemplatesTab />
+          </TabsContent>
+
+          {/* Automation Tab */}
+          <TabsContent value="automation" className="flex-1 overflow-hidden m-0">
+            <AutomationTab onSwitchToEditor={() => setActiveTab("editor")} />
+          </TabsContent>
+
+          {/* Blog Posts Tab */}
+          <TabsContent value="blog-posts" className="flex-1 overflow-hidden m-0">
+            <BlogPostsTab />
           </TabsContent>
         </Tabs>
       </div>
