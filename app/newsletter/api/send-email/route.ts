@@ -13,6 +13,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Handle both single email and array of emails
+    const recipients = Array.isArray(to) ? to : [to];
+
     if (!process.env.RESEND_API_KEY) {
       return NextResponse.json(
         { 
